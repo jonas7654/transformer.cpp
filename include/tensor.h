@@ -1,5 +1,5 @@
-#ifndef VALUE_MATRIX_H
-#define VALUE_MATRIX_H
+#ifndef TENSOR_H
+#define TENSOR_H
 
 #include <cassert>
 #include <cstddef>
@@ -15,7 +15,7 @@
 
 class Embedding;
 
-class Matrix {
+class Tensor {
 typedef std::mt19937 rng_type;
 friend class mlp;
 friend class Embedding;
@@ -23,31 +23,29 @@ friend class Embedding;
 private:
   double* _data;
   double* _gradient;
-
   
   std::string op;
-  std::unordered_set<Matrix*> childs;
+  std::unordered_set<Tensor*> childs;
   std::function<void()> _backward;
 
-  void topological_sort(std::vector<Matrix*>& topo_vector);
-  void collect_nodes(std::vector<Matrix*>& collected);
+  void topological_sort(std::vector<Tensor*>& topo_vector);
+  void collect_nodes(std::vector<Tensor*>& collected);
   void batch_subset(size_t start_row, size_t end_row);
 
   bool isLearnable;
   bool isPersistent;
   bool visited;
+
 public:
-  size_t n_rows;
-  size_t n_cols;
   size_t n;
+  size_t* shape;
 
-  Matrix(size_t n_rows, size_t n_cols, bool isLearnable);
-  Matrix(Matrix* other);
-  ~Matrix();
+  Tensor(size_t dim, size_t* shape, bool isLearnable); // row * D1 * D2 + D2 * j + k
+  Tensor(Tensor* other);
+  ~Tensor();
 
-  double& at(size_t i, size_t j);
-  double& grad_at(size_t i, size_t j);
-  double& _data_at(size_t i);
+  double& at(size_t* indices);
+  double& grad_at(size_t* indices);
   double sum() const;
   
   void fill(double _value);
@@ -60,30 +58,30 @@ public:
   void deleteGraph();
   void clear_children();
   
-  Matrix* operator = (Matrix* other);
+  Tensor* operator = (Tensor* other);
 
   // The idea is to only work with heap allocated instances of matrix
-  Matrix* operator +(Matrix* other);
-  Matrix* operator -(Matrix* other);
-  Matrix* operator *(Matrix* other);
-  Matrix* operator /(Matrix* other);
+  Tensor* operator +(Tensor* other);
+  Tensor* operator -(Tensor* other);
+  Tensor* operator *(Tensor* other);
+  Tensor* operator /(Tensor* other);
 
-  Matrix* relu ();
-  Matrix* sigmoid();
-  Matrix* softmax();
-  Matrix* add_bias(Matrix* other);
-  Matrix* square();
-  Matrix* log();
+  Tensor* relu ();
+  Tensor* sigmoid();
+  Tensor* softmax();
+  Tensor* add_bias(Tensor* other);
+  Tensor* square();
+  Tensor* log();
 
   void scale(double& d);
   void gradDescent(double& lr);
   void setIsPersistent(bool b);
   
-  Matrix* select_row(size_t row);
-  Matrix* select_col(size_t col);
+  Tensor* select_row(size_t row);
+  Tensor* select_col(size_t col);
   void tranpose();
-  Matrix* slice(size_t row_start_idx, size_t row_end_idx, size_t col_start_idx, size_t col_end_idx);   
+  Tensor* slice(size_t row_start_idx, size_t row_end_idx, size_t col_start_idx, size_t col_end_idx);   
 };
 
 
-#endif // !VALUE_MATRIX_H
+#endif

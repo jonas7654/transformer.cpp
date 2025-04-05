@@ -1,23 +1,19 @@
-#include "../include/value_matrix.h"
-#include <algorithm>
+#include "../include/tensor.h"
 #include <cassert>
-#include <cblas.h> 
-#include <cmath>
 
-Matrix::Matrix(size_t rows, size_t cols, bool isLearnable) { 
-  this->n_rows = rows;
-  this->n_cols = cols;
-  this->isPersistent = false;
-  double* _array = new double[n_rows * n_cols];
-  double* _grad = new double[n_rows * n_cols];
-  this->_data = _array;
-  this->_gradient = _grad;
-  this->n = n_rows * n_cols;
-  this->op = "NONE";
+Tensor::Tensor(size_t dims, size_t* shape, bool isLearnable) { 
+  for (size_t i = 0; i < dims; i++) {
+    this->n += shape[i];
+  }
+  
+  double* _array = new double[n];
+  double* _grad = new double[n]; 
+  
+  this->shape = shape;
   this->isLearnable = isLearnable;
   this->visited = false;
 
-  std::unordered_set<Matrix*> childs;
+  std::unordered_set<Tensor*> childs;
   this->childs = childs;
 
   // fill _gradient with zeros
@@ -33,63 +29,41 @@ Matrix::Matrix(size_t rows, size_t cols, bool isLearnable) {
 
 };
 
-Matrix::Matrix(Matrix* other) {
-  if(other == this) {
-    return;
-  }
+Tensor::Tensor(Tensor* other) {
+} 
 
-  double* _array = new double[other->n_rows * other->n_cols];
-  double* _grad = new double[other->n_rows * other->n_cols];
-  for(size_t i = 0; i < other->n_cols * other->n_rows; i++) {
-    _array[i] = other->_data[i];
-  }
-  for(size_t i = 0; i < other->n_cols * other->n_rows; i++) {
-    _grad[i] = other->_gradient[i];
-  }
-
-
-  this->_data = _array;
-  this->_gradient = _grad;
-
-  this->n_rows = other->n_rows;
-  this->n_cols = other->n_cols;
-  this->n = other->n;
-  this->op = other->op;
-  this->isLearnable = other->isLearnable;
-  this->visited = other->visited;
-}
-
-
-Matrix::~Matrix() {
+Tensor::~Tensor() {
   delete[] _data;
   delete[] _gradient;
 }
 
-double& Matrix::at(size_t i, size_t j) {
-  assert(i < n_rows && j < n_cols);
+double& Tensor::at(size_t* ) {
+  for (size_t i = 0; i < n; i++) {
+    assert()
+  }
   return _data[i * n_cols + j];
 }
 
-double& Matrix::grad_at(size_t i, size_t j) {
+double& Tensor::grad_at(size_t i, size_t j) {
   assert(i < n_rows && j < n_cols);
   return _gradient[i * n_cols + j];
 }
 
-void Matrix::fill(double _value){
+void Tensor::fill(double _value){
   for (size_t i = 0; i < n_cols * n_rows; i++) {
     _data[i] = _value;
   }
 }
 
-double& Matrix::_data_at(size_t i) {
+double& Tensor::_data_at(size_t i) {
   assert(i < n_rows * n_cols);
   return _data[i];
 }
 
-Matrix* Matrix::softmax() {
+Tensor* Tensor::softmax() {
   // Apply the softmax row-wise: S = e^x / sum(e^x)
   // TODO: numerical stability
-  Matrix* result = new Matrix(this->n_rows, this->n_cols, false);
+  Tensor* result = new Tensor(this->n_rows, this->n_cols, false);
   
    for (size_t i = 0; i < n_rows; i++) {
     // Find maximum value in the row for numerical stability
@@ -167,7 +141,7 @@ Matrix* Matrix::softmax() {
   return result;
 }
 
-void Matrix::rand() {
+void Tensor::rand() {
   // Initialize random number generator
   std::random_device rd;  // Seed for the random number engine
   std::mt19937 gen(rd()); // Mersenne Twister engine
@@ -177,12 +151,12 @@ void Matrix::rand() {
   }
 }
 
-void Matrix::setIsPersistent(bool b) {
+void Tensor::setIsPersistent(bool b) {
   isPersistent = b;
 }
 
 
-void Matrix::print() {
+void Tensor::print() {
   std::cout << "Operation: " << this->op << std::endl;
 
   for (size_t i = 0; i < n_rows; i++) {
@@ -194,7 +168,7 @@ void Matrix::print() {
   std::cout << std::endl;
 }
 
-void Matrix::printGradient() {
+void Tensor::printGradient() {
   std::cout << "Gradients: "<< std::endl;
 
   for (size_t i = 0; i < n_rows; i++) {
@@ -206,11 +180,11 @@ void Matrix::printGradient() {
   std::cout << std::endl;
 }
 
-void Matrix::scale(double& d) {
+void Tensor::scale(double& d) {
    cblas_dscal(n, d, _data, 1);
 }
 
-void Matrix::gradDescent(double &lr) {
+void Tensor::gradDescent(double &lr) {
 // This calculates result = this - lr * _gradient  
   cblas_daxpy(n_rows * n_cols,
               -lr, // Minus here for gradient descent
@@ -220,8 +194,8 @@ void Matrix::gradDescent(double &lr) {
               1);
 }
 
-Matrix* Matrix::relu() {
-  Matrix* result = new Matrix(n_rows, n_cols, false);
+Tensor* Tensor::relu() {
+  Tensor* result = new Tensor(n_rows, n_cols, false);
 
   cblas_dcopy(n_rows * n_cols, this->_data, 1, result->_data, 1);
 
@@ -249,8 +223,8 @@ Matrix* Matrix::relu() {
 }
 
 // TODO: use openBLAS
-Matrix* Matrix::sigmoid() {
-  Matrix* result = new Matrix(n_rows, n_cols, isPersistent);
+Tensor* Tensor::sigmoid() {
+  Tensor* result = new Tensor(n_rows, n_cols, isPersistent);
 
   cblas_dcopy(n, this->_data, 1, result->_data, 1);
 
@@ -273,11 +247,11 @@ Matrix* Matrix::sigmoid() {
   return result;
 }
 
-Matrix* Matrix::operator+ (Matrix* other){
+Tensor* Tensor::operator+ (Tensor* other){
   assert(this->n_rows == other->n_rows);
   assert(this->n_cols == other->n_cols);
 
-  Matrix* result = new Matrix(n_rows, n_cols, false);
+  Tensor* result = new Tensor(n_rows, n_cols, false);
   // cblas works inplace => copy this->_data to result
   for (size_t i = 0; i < n_rows * n_cols; i++) {
     result->_data[i] = _data[i];
@@ -322,11 +296,11 @@ Matrix* Matrix::operator+ (Matrix* other){
   return result;
 };
 
-Matrix* Matrix::operator- (Matrix* other){
+Tensor* Tensor::operator- (Tensor* other){
   assert(this->n_rows == other->n_rows);
   assert(this->n_cols == other->n_cols);
 
-  Matrix* result = new Matrix(n_rows, n_cols, false);
+  Tensor* result = new Tensor(n_rows, n_cols, false);
 
   // cblas works inplace => copy this->_data to result
   for (size_t i = 0; i < n_rows * n_cols; i++) {
@@ -370,12 +344,12 @@ Matrix* Matrix::operator- (Matrix* other){
 };
 
 
-Matrix* Matrix::operator* (Matrix* other){
+Tensor* Tensor::operator* (Tensor* other){
   assert(this->n_cols == other->n_rows);
-  assert(this->_data != nullptr && "Matrix A data is null!");
-  assert(other->_data != nullptr && "Matrix B data is null!");
+  assert(this->_data != nullptr && "Tensor A data is null!");
+  assert(other->_data != nullptr && "Tensor B data is null!");
 
-  Matrix* result = new Matrix(n_rows, other->n_cols, false);
+  Tensor* result = new Tensor(n_rows, other->n_cols, false);
 
   // BLAS MatMul
   cblas_dgemm(CblasRowMajor, // _data is row-major
@@ -467,9 +441,9 @@ result->_backward = [this, other, result]() {
   return result;
 };
 
-Matrix* Matrix::square() {
+Tensor* Tensor::square() {
   
-  Matrix* result = new Matrix(n_rows, n_cols, false);
+  Tensor* result = new Tensor(n_rows, n_cols, false);
   cblas_dcopy(n, _data, 1, result->_data, 1);
   for (size_t i = 0; i < n; i++) {
     result->_data[i] *= result->_data[i];
@@ -496,10 +470,10 @@ Matrix* Matrix::square() {
   return result;
 }
 
-Matrix* Matrix::add_bias(Matrix* other) {
+Tensor* Tensor::add_bias(Tensor* other) {
   assert(other->n_cols == 1 && other->n_rows == n_cols);
 
-  Matrix* result = new Matrix(n_rows, n_cols, false);
+  Tensor* result = new Tensor(n_rows, n_cols, false);
 
   cblas_dcopy(n, _data, 1, result->_data, 1);
   for (size_t i = 0; i < result->n_rows; i++) {
@@ -530,9 +504,9 @@ Matrix* Matrix::add_bias(Matrix* other) {
   return result;
 }
 
-// Creates a log transformed new Matrix with "this" as child 
-Matrix* Matrix::log() {
-  Matrix* result = new Matrix(n_rows, n_cols, isPersistent);
+// Creates a log transformed new Tensor with "this" as child 
+Tensor* Tensor::log() {
+  Tensor* result = new Tensor(n_rows, n_cols, isPersistent);
   cblas_dcopy(n, _data, 1, result->_data, 1);
   
   // Apply log
@@ -556,28 +530,28 @@ Matrix* Matrix::log() {
   return result;
 }
 
-void Matrix::batch_subset(size_t start_row, size_t batch_size) {
+void Tensor::batch_subset(size_t start_row, size_t batch_size) {
   // Function only for the training Function
   // Allows subsetting batches using pointer arithmetic to work inplace
   _data = _data + start_row * n_cols;
   n_rows = batch_size;
 }
 
-Matrix* Matrix::select_row(size_t row) {
+Tensor* Tensor::select_row(size_t row) {
   return slice(row , row, 0, n_cols - 1);
 }
 
-Matrix* Matrix::select_col(size_t col) {
+Tensor* Tensor::select_col(size_t col) {
   return slice(0, n_rows - 1, col, col);
 }
 
-Matrix* Matrix::slice(size_t row_start_idx, size_t row_end_idx, size_t col_start_idx, size_t col_end_idx) {
+Tensor* Tensor::slice(size_t row_start_idx, size_t row_end_idx, size_t col_start_idx, size_t col_end_idx) {
   assert(row_start_idx < n_rows && row_end_idx < n_rows && row_start_idx <= row_end_idx);
   assert(col_start_idx < n_cols && col_end_idx < n_cols && col_start_idx <= col_end_idx);
   size_t new_n_rows = row_end_idx - row_start_idx + 1;
   size_t new_n_cols = col_end_idx - col_start_idx + 1;
 
-  Matrix* sliced_matrix = new Matrix(new_n_rows, new_n_cols, false);
+  Tensor* sliced_matrix = new Tensor(new_n_rows, new_n_cols, false);
 
   // Copy sliced data row-wise
   for (size_t i = 0; i < new_n_rows; i++) {
@@ -587,7 +561,7 @@ Matrix* Matrix::slice(size_t row_start_idx, size_t row_end_idx, size_t col_start
   return sliced_matrix;
 }
 
-void Matrix::tranpose() {
+void Tensor::tranpose() {
   double* temp = new double[n];
   cblas_dcopy(n, _data, 1, temp, 1);
 
@@ -602,30 +576,30 @@ void Matrix::tranpose() {
   this->n_cols = rows;
 }
 
-void Matrix::topological_sort(std::vector<Matrix*> &topo_vector){
+void Tensor::topological_sort(std::vector<Tensor*> &topo_vector){
   // check if the current Node was already visited.
   // It would probably more efficient to store a bool _visited within Value :TODO
   if (this->visited) {
     return;
   }
   this->visited = true;
-  for (Matrix* child : childs) {
+  for (Tensor* child : childs) {
     child->topological_sort(topo_vector);
   }
   // Add the first node to the vector (This will be called at at the first node)
   topo_vector.push_back(this);
 }
 
-void Matrix::backward() {
+void Tensor::backward() {
   // df/df = 1.0
   std::fill(_gradient, _gradient + n_rows * n_cols, 1.0);
 
 
-  std::vector<Matrix*> topo_vector;
+  std::vector<Tensor*> topo_vector;
   topological_sort(topo_vector);
   
   // Traverse the collected nodes in reverse
-  for (std::vector<Matrix*>::iterator it_end = topo_vector.end() ; it_end != topo_vector.begin();){
+  for (std::vector<Tensor*>::iterator it_end = topo_vector.end() ; it_end != topo_vector.begin();){
     it_end--;
     if ((*it_end)->_backward) {
       (*it_end)->_backward();
@@ -634,24 +608,24 @@ void Matrix::backward() {
 }
 
 
-void Matrix::zeroGrad() {
+void Tensor::zeroGrad() {
   cblas_dscal(n_rows * n_cols, 0.0, _gradient, 1);
 }
 
-void Matrix::collect_nodes(std::vector<Matrix*>& collected) { 
+void Tensor::collect_nodes(std::vector<Tensor*>& collected) { 
     if (this->visited || isPersistent || isLearnable){
       return;
   } 
     this->visited = true;
   // Traverse children first
-    for (Matrix* child : childs) {
+    for (Tensor* child : childs) {
         child->collect_nodes(collected);
     }
     collected.push_back(this);
 }
 
-void Matrix::deleteGraph() {
-    std::vector<Matrix*> nodes;
+void Tensor::deleteGraph() {
+    std::vector<Tensor*> nodes;
     collect_nodes(nodes);
 
     // Delete in reverse order (children first, parents last)
@@ -661,20 +635,20 @@ void Matrix::deleteGraph() {
 }
 
 
-void Matrix::resetVisited() {
+void Tensor::resetVisited() {
   if (this->visited) {
     this->visited = false;
-    for (Matrix* child : childs) {
+    for (Tensor* child : childs) {
       child->resetVisited();
     }
   }
 }
 
-void Matrix::clear_children() {
+void Tensor::clear_children() {
   childs.clear(); // Remove all child references
 }
 
-double Matrix::sum() const {
+double Tensor::sum() const {
     double total = 0.0;
     for (size_t i = 0; i < n; i++) {
         total += _data[i];
