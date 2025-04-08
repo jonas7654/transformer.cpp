@@ -1,10 +1,14 @@
 #include "../include/tensor.h"
 #include <cassert>
+#include <cstddef>
 
 Tensor::Tensor(size_t dims, size_t* shape, bool isLearnable) { 
   for (size_t i = 0; i < dims; i++) {
     this->n += shape[i];
   }
+
+  this->n_dim = dims;
+  this->strides = new size_t[dims];
   
   double* _array = new double[n];
   double* _grad = new double[n]; 
@@ -37,12 +41,6 @@ Tensor::~Tensor() {
   delete[] _gradient;
 }
 
-double& Tensor::at(size_t* ) {
-  for (size_t i = 0; i < n; i++) {
-    assert()
-  }
-  return _data[i * n_cols + j];
-}
 
 double& Tensor::grad_at(size_t i, size_t j) {
   assert(i < n_rows && j < n_cols);
@@ -146,7 +144,7 @@ void Tensor::rand() {
   std::random_device rd;  // Seed for the random number engine
   std::mt19937 gen(rd()); // Mersenne Twister engine
   std::uniform_real_distribution<double> dist(-0.5, 0.5); // Distribution for random doubles
-  for (size_t i = 0; i < n_cols * n_rows; i++) {
+  for (size_t i = 0; i < n; i++) {
     _data[i] = dist(gen);
   }
 }

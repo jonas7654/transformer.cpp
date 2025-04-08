@@ -36,6 +36,9 @@ private:
   bool isPersistent;
   bool visited;
 
+  size_t n_dim;
+  size_t* strides;
+
 public:
   size_t n;
   size_t* shape;
@@ -43,9 +46,7 @@ public:
   Tensor(size_t dim, size_t* shape, bool isLearnable); // row * D1 * D2 + D2 * j + k
   Tensor(Tensor* other);
   ~Tensor();
-
-  double& at(size_t* indices);
-  double& grad_at(size_t* indices);
+  
   double sum() const;
   
   void fill(double _value);
@@ -81,6 +82,16 @@ public:
   Tensor* select_col(size_t col);
   void tranpose();
   Tensor* slice(size_t row_start_idx, size_t row_end_idx, size_t col_start_idx, size_t col_end_idx);   
+
+  template<typename... Indices>
+  double& at(Indices... indices) {
+    static_assert((std::is_same_v<Indices, size_t>) && ..., "All indices must be of type size_t");
+
+    constexpr size_t N = sizeof...(Indices);
+    static_assert(N == n_dim, "Number of dimensions must match");
+
+
+  }
 };
 
 
