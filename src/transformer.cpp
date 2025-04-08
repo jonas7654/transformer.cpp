@@ -18,6 +18,8 @@ transformer::transformer(const size_t vocab_size,
   this->n_heads = n_heads;
   this->dropout = dropout;
   this->lr = lr;
+
+  // Set the strides to convert n-dimensional indices to flat array indice
   
   // Initialize and mlp
   // In standard literature the hidden layers are often 4 * n_emd

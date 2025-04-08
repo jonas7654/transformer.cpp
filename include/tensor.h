@@ -40,7 +40,7 @@ private:
   size_t* strides;
 
 public:
-  size_t n;
+  static size_t n;
   size_t* shape;
 
   Tensor(size_t dim, size_t* shape, bool isLearnable); // row * D1 * D2 + D2 * j + k
@@ -83,6 +83,16 @@ public:
   void tranpose();
   Tensor* slice(size_t row_start_idx, size_t row_end_idx, size_t col_start_idx, size_t col_end_idx);   
 
+
+  // Helper function
+  size_t flat_index(size_t const(&indices)[n]) {
+    size_t flat_idx = 0;
+
+    for (size_t i = 0; i < n ; i++) {
+
+    }
+  }
+  
   template<typename... Indices>
   double& at(Indices... indices) {
     static_assert((std::is_same_v<Indices, size_t>) && ..., "All indices must be of type size_t");
@@ -90,7 +100,13 @@ public:
     constexpr size_t N = sizeof...(Indices);
     static_assert(N == n_dim, "Number of dimensions must match");
 
+   
 
+    // Calculate the flat array index
+    size_t flat_index = 0;
+    for (size_t i = 0; i < N; i++) {
+      flat_index += 
+    }
   }
 };
 

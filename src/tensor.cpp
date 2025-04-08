@@ -2,6 +2,8 @@
 #include <cassert>
 #include <cstddef>
 
+// I use a variadic template in order to initialize a n-dimensional tensor 
+
 Tensor::Tensor(size_t dims, size_t* shape, bool isLearnable) { 
   for (size_t i = 0; i < dims; i++) {
     this->n += shape[i];
@@ -19,6 +21,13 @@ Tensor::Tensor(size_t dims, size_t* shape, bool isLearnable) {
 
   std::unordered_set<Tensor*> childs;
   this->childs = childs;
+
+  // Inner most dimension 
+  this->strides[n - 1] = 1;
+  // remaining strides
+  for (size_t i = n - 2; i >= 0; i--) {
+    strides[i] = strides[i + 1] * shape[i + 1];
+  }
 
   // fill _gradient with zeros
   cblas_dscal(this->n, 0.0, _gradient, 1);
